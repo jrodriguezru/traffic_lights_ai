@@ -87,9 +87,9 @@ class TFState:
 
         # Handle departures (cars leaving if light is green)
         if self.light_color_ns == 'GREEN' and self.num_cars_waiting_ns > 0:
-            self.num_cars_waiting_ns -= 3
+            self.num_cars_waiting_ns = max(0, self.num_cars_waiting_ns - 3)
         if self.light_color_ew == 'GREEN' and self.num_cars_waiting_ew > 0:
-            self.num_cars_waiting_ew -= 3
+            self.num_cars_waiting_ew = max(0, self.num_cars_waiting_ew - 3)
 
     def getReward(self):
         """
