@@ -5,7 +5,7 @@ from states import TFState
 from qlearning_agents import QLearningAgent, TrafficApproximateQAgent
 
 
-def run_simulation(model_type='qlearning', episodes=10, steps_per_episode=50):
+def run_simulation(model_type='qlearning', episodes=10, steps_per_episode=50, reward_type='initial'):
     print(f"Starting simulation with model: {model_type}")
     
     # Initialize agent based on model type
@@ -27,7 +27,7 @@ def run_simulation(model_type='qlearning', episodes=10, steps_per_episode=50):
     for episode in range(episodes):
         # Initialize state
         # Random initial cars
-        state = TFState('RED', 'GREEN', random.randint(0, 5), random.randint(0, 5))
+        state = TFState('RED', 'GREEN', random.randint(0, 5), random.randint(0, 5), reward_type)
         
         total_reward = 0
         
@@ -57,10 +57,10 @@ def run_simulation(model_type='qlearning', episodes=10, steps_per_episode=50):
 if __name__ == '__main__':
     # Example usage
     print("--- Q-Learning ---")
-    run_simulation('qlearning', episodes=5)
+    run_simulation('qlearning', episodes=5, reward_type='penalty')
     
     print("\n--- Q-Learning with Epsilon ---")
-    run_simulation('qlearning_epsilon', episodes=5)
-    
+    run_simulation('qlearning_epsilon', episodes=5, reward_type='penalty')
+
     print("\n--- Approximate Q-Learning ---")
-    run_simulation('approximate', episodes=5)
+    run_simulation('approximate', episodes=5, reward_type='penalty')
