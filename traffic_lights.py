@@ -6,14 +6,14 @@ import tkinter as tk
 from states import TFState
 from qlearning_agents import QLearningAgent, TrafficApproximateQAgent
 
-def plot_results(history):
+def plot_results(history, switch_counts):
     try:
         import matplotlib.pyplot as plt
     except ImportError:
         print("Matplotlib is required for plotting. Please install it: pip install matplotlib")
         return
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 12))
     
     for i, data in enumerate(history):
         ax1.plot(data['ns'], label=f'Episode {i+1}')
@@ -30,6 +30,15 @@ def plot_results(history):
     ax2.set_ylabel('Cars')
     ax2.legend()
     ax2.grid(True)
+
+    # Bar chart for switches
+    episodes = range(1, len(switch_counts) + 1)
+    ax3.bar(episodes, switch_counts, color='skyblue')
+    ax3.set_title('Number of Switches per Episode')
+    ax3.set_xlabel('Episode')
+    ax3.set_ylabel('Switches')
+    ax3.set_xticks(episodes)
+    ax3.grid(axis='y')
     
     plt.tight_layout()
     plt.show()
@@ -64,14 +73,16 @@ def run_simulation(model_type='qlearning', episodes=10, steps_per_episode=50, re
             'state': TFState('RED', 'GREEN', random.randint(0, 5), random.randint(0, 5), reward_type),
             'total_reward': 0,
             'history': [],
-            'current_data': {'ns': [], 'ew': []}
+            'current_data': {'ns': [], 'ew': []},
+            'switch_history': [],
+            'current_switches': 0
         }
         
         def step_simulation():
             if sim_state['episode'] >= episodes:
                 print("All episodes finished.")
                 root.destroy()
-                plot_results(sim_state['history'])
+                plot_results(sim_state['history'], sim_state['switch_history'])
                 return
 
             if sim_state['step'] >= steps_per_episode:
@@ -81,9 +92,14 @@ def run_simulation(model_type='qlearning', episodes=10, steps_per_episode=50, re
                 sim_state['history'].append(sim_state['current_data'])
                 sim_state['current_data'] = {'ns': [], 'ew': []}
                 
+                # Save switch data
+                sim_state['switch_history'].append(sim_state['current_switches'])
+                sim_state['current_switches'] = 0
+                
                 sim_state['episode'] += 1
                 sim_state['step'] = 0
                 sim_state['state'] = TFState('RED', 'GREEN', random.randint(0, 5), random.randint(0, 5), reward_type)
+                
                 sim_state['total_reward'] = 0
                 root.after(10, step_simulation)
                 return
@@ -96,6 +112,9 @@ def run_simulation(model_type='qlearning', episodes=10, steps_per_episode=50, re
             sim_state['current_data']['ew'].append(state.num_cars_waiting_ew)
             
             action = agent.getAction(state)
+            if action == 'SWITCH':
+                sim_state['current_switches'] += 1
+                
             prev_state = copy.deepcopy(state)
             state.updateState(action)
             next_state = state
@@ -148,8 +167,8 @@ if __name__ == '__main__':
     # print("--- Q-Learning ---")
     # run_simulation('qlearning', episodes=5, steps_per_episode=100, reward_type='penalty', use_gui=True)
     
-    print("\n--- Q-Learning with Epsilon ---")
-    run_simulation('qlearning_epsilon', episodes=5, steps_per_episode=100, reward_type='penalty', use_gui=True)
+    # print("\n--- Q-Learning with Epsilon ---")
+    # run_simulation('qlearning_epsilon', episodes=5, steps_per_episode=100, reward_type='balanced', use_gui=True)
 
-    # print("\n--- Approximate Q-Learning with GUI ---")
-    # run_simulation('approximate', episodes=5, steps_per_episode=100, reward_type='penalty', use_gui=True)
+    print("\n--- Approximate Q-Learning with GUI ---")
+    run_simulation('approximate', episodes=5, steps_per_episode=100, reward_type='balanced', use_gui=True)

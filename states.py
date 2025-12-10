@@ -86,10 +86,12 @@ class TFState:
         self.num_cars_waiting_ew += new_cars - (new_cars // 2)
 
         # Handle departures (cars leaving if light is green)
+        # Increased departure rate to 4 to ensure queue clearing capability
+        departure_rate = 4
         if self.light_color_ns == 'GREEN' and self.num_cars_waiting_ns > 0:
-            self.num_cars_waiting_ns = max(0, self.num_cars_waiting_ns - 3)
+            self.num_cars_waiting_ns = max(0, self.num_cars_waiting_ns - departure_rate)
         if self.light_color_ew == 'GREEN' and self.num_cars_waiting_ew > 0:
-            self.num_cars_waiting_ew = max(0, self.num_cars_waiting_ew - 3)
+            self.num_cars_waiting_ew = max(0, self.num_cars_waiting_ew - departure_rate)
 
     def getReward(self):
         """
@@ -109,11 +111,12 @@ class TFState:
     def getRewardBalanced(self):
         """
         Penalize imbalance between directions.
+        Using squared difference to strongly penalize large imbalances.
         """
         total_cars = self.num_cars_waiting_ns + self.num_cars_waiting_ew
         imbalance = abs(self.num_cars_waiting_ns - self.num_cars_waiting_ew)
-        # Penalize total cars AND the difference (weighted by 2)
-        return - (total_cars + 2 * imbalance)
+        # Penalize total cars AND the squared difference
+        return - (total_cars + 0.5 * (imbalance ** 2))
 
     def getRewardSwitchingPenalty(self):
         """
