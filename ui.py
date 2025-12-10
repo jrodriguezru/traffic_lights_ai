@@ -1,5 +1,5 @@
 import tkinter as tk
-import time
+import copy
 
 class TrafficLightUI:
     def __init__(self, root):
@@ -77,8 +77,6 @@ def run_gui_simulation(agent, steps=100, delay=1):
     
     # Import here to avoid circular dependency if placed at top
     from states import TFState
-    import random
-    import copy
     
     state = TFState('RED', 'GREEN', 5, 5, reward_type='balanced')
     
@@ -90,11 +88,7 @@ def run_gui_simulation(agent, steps=100, delay=1):
         action = agent.getAction(state)
         prev_state = copy.deepcopy(state)
         state.updateState(action)
-        
-        # Assuming getReward is available on state or calculated externally
-        # reward = state.getReward() 
-        # agent.update(prev_state, action, state, reward) # If we want to train during GUI
-        
+                
         ui.update(state)
         
         # Schedule next step
@@ -105,7 +99,7 @@ def run_gui_simulation(agent, steps=100, delay=1):
     root.mainloop()
 
 if __name__ == "__main__":
-    # For testing UI standalone
+    # For testing UI standalone. Not training
     from qlearning_agents import QLearningAgent
     agent = QLearningAgent(alpha=0.1, epsilon=0.1, gamma=0.8)
     run_gui_simulation(agent)

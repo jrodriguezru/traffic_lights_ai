@@ -4,10 +4,13 @@ import random
 class TFState:
     """
     A TFState represents the state of a traffic light at an intersection.
-    It includes information about the current light color and the number of cars waiting.
+    It includes information about:
+    - The current light color and the number of cars waiting in each direction.
+    - The tick count (time step).
+    - The type of reward function to be used.
     """
 
-    def __init__(self, light_color_ns, light_color_ew, num_cars_waiting_ns, num_cars_waiting_ew, reward_type='initial'):
+    def __init__(self, light_color_ns, light_color_ew, num_cars_waiting_ns, num_cars_waiting_ew, reward_type='initial', ticks_per_episode=4320):
         self.light_color_ns = light_color_ns  # e.g., 'RED', 'GREEN', 'YELLOW'
         self.light_color_ew = light_color_ew  # e.g., 'RED', 'GREEN', 'YELLOW'
         self.num_cars_waiting_ns = num_cars_waiting_ns  # integer count of cars waiting going north-south or south-north
@@ -16,6 +19,7 @@ class TFState:
         self.reward_type = reward_type
         self.ticks_since_last_switch = 0
         self.last_action_penalty = 0
+        self.ticks_per_episode = ticks_per_episode
         # print(f"Initialized TFState: {self}")
 
     def __eq__(self, other):
@@ -29,6 +33,7 @@ class TFState:
 
     def __hash__(self):
         return hash((self.light_color_ns, self.light_color_ew, self.num_cars_waiting_ns, self.num_cars_waiting_ew, self.tick, self.reward_type, self.ticks_since_last_switch))
+    
     def __str__(self):
         return f"TFState(light_color_ns={self.light_color_ns}, light_color_ew={self.light_color_ew}, num_cars_waiting_ns={self.num_cars_waiting_ns}, num_cars_waiting_ew={self.num_cars_waiting_ew}, tick={self.tick}, reward_type={self.reward_type}, last_switch={self.ticks_since_last_switch})"
     
@@ -37,7 +42,12 @@ class TFState:
         Returns the legal actions for this state.
         Possible actions could be 'SWITCH', or 'STAY'.
         """
-        return ['SWITCH', 'STAY']
+        cannonical_actions = ['SWITCH', 'STAY']
+        if self.ticks_since_last_switch < 2:
+            return ['STAY']
+        if self.ticks_since_last_switch >= 13:
+            return ['SWITCH']
+        return cannonical_actions
     
     def updateState(self, action):
         """
@@ -67,10 +77,10 @@ class TFState:
             self.last_action_penalty = 0
         
         # Sine wave arrival logic
-        period = 50  # Adjust as needed
-        amplitude = 2
-        base = 3
-        epsilon = 1.0 # Noise magnitude
+        period = self.ticks_per_episode  # Adjust as needed
+        amplitude = 1.5
+        base = 2
+        epsilon = 0.5 # Noise magnitude
 
         # Calculate base arrival rate with sine wave
         arrival_rate = base + amplitude * math.sin(2 * math.pi * self.tick / period)
@@ -81,12 +91,11 @@ class TFState:
         # Total cars to add (ensure non-negative)
         new_cars = int(max(0, round(arrival_rate + noise)))
         
-        # Distribute new cars (e.g., evenly)
-        self.num_cars_waiting_ns += new_cars // 2
-        self.num_cars_waiting_ew += new_cars - (new_cars // 2)
+        # Distribute new cars between directions
+        self.num_cars_waiting_ns += 3* new_cars // 5
+        self.num_cars_waiting_ew += new_cars - (3 * new_cars // 5)
 
         # Handle departures (cars leaving if light is green)
-        # Increased departure rate to 4 to ensure queue clearing capability
         departure_rate = 4
         if self.light_color_ns == 'GREEN' and self.num_cars_waiting_ns > 0:
             self.num_cars_waiting_ns = max(0, self.num_cars_waiting_ns - departure_rate)
